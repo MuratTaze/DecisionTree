@@ -1,11 +1,11 @@
 import java.util.Arrays;
 
-public class Record {
+public class Instance {
 	private int recordId;
 	private int stateOfNature;
 	private Double[] features;
 
-	public Record() {
+	public Instance() {
 		super();
 		features = new Double[21];
 	}

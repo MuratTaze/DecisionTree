@@ -4,11 +4,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class DataLoader {
-	private ArrayList<Record> data;
+	private ArrayList<Instance> data;
 
 	public DataLoader(String filename) throws NumberFormatException, IOException {
 		super();
-		data = new ArrayList<Record>();
+		data = new ArrayList<Instance>();
 
 		FileReader inputFile = new FileReader(filename);
 		BufferedReader bufferReader = new BufferedReader(inputFile);
@@ -16,7 +16,7 @@ public class DataLoader {
 		int id = 1;
 		while ((line = bufferReader.readLine()) != null) {
 			String[] values = line.split(" ");
-			Record record = new Record();
+			Instance record = new Instance();
 			record.setRecordId(id);
 			for (int i = 0; i < values.length - 1; i++) {
 				record.getFeatures()[i] = new Double(values[i]);
@@ -30,11 +30,11 @@ public class DataLoader {
 		bufferReader.close();
 	}
 
-	public ArrayList<Record> getData() {
+	public ArrayList<Instance> getData() {
 		return data;
 	}
 
-	public void setData(ArrayList<Record> data) {
+	public void setData(ArrayList<Instance> data) {
 		this.data = data;
 	}
 

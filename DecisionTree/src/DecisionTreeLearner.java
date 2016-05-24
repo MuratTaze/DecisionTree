@@ -12,8 +12,97 @@ public class DecisionTreeLearner {
 		actualTree = new Tree();
 		actualTree.data = data;
 		possibleSplits = new ArrayList<Split>();
-		findPossibleSplits(data, 10);
+		findPossibleSplits(data, 200);
 		buildTree(actualTree);
+	}
+
+	public void test(ArrayList<Instance> data) {
+		int label;
+
+		double correctPredicts = 0;
+		double correctPredictClass1 = 0;
+		double correctPredictClass2 = 0;
+		double correctPredictClass3 = 0;
+		double totalClass1 = 0;
+		double totalClass2 = 0;
+		double totalClass3 = 0;
+		double class1_2 = 0;
+		double class1_3 = 0;
+		double class2_1 = 0;
+		double class2_3 = 0;
+		double class3_1 = 0;
+		double class3_2 = 0;
+		for (Instance instance : data) {
+			if (instance.getStateOfNature() == 1)
+				totalClass1++;
+			if (instance.getStateOfNature() == 2)
+				totalClass2++;
+			if (instance.getStateOfNature() == 3)
+				totalClass3++;
+			label = classifyInstance(instance, actualTree);
+			if (label == instance.getStateOfNature()) {
+				correctPredicts++;
+				if (label == 1)
+					correctPredictClass1++;
+				if (label == 2)
+					correctPredictClass2++;
+				if (label == 3)
+					correctPredictClass3++;
+			} else {
+
+				if (instance.getStateOfNature() == 1) {
+					if (label == 2)
+						class1_2++;
+					if (label == 3)
+						class1_3++;
+				}
+				if (instance.getStateOfNature() == 2) {
+					if (label == 1)
+						class2_1++;
+					if (label == 3)
+						class2_3++;
+				}
+				if (instance.getStateOfNature() == 3) {
+					if (label == 2)
+						class3_2++;
+					if (label == 1)
+						class3_1++;
+				}
+			}
+
+		}
+		System.out.println("Accuracy:" + correctPredicts / data.size());
+		System.out.println("Class 1 accuracy:" + correctPredictClass1 / totalClass1);
+		System.out.println("Class 2 accuracy:" + correctPredictClass2 / totalClass2);
+		System.out.println("Class 3 accuracy:" + correctPredictClass3 / totalClass3);
+		System.out.println("Confusion matrix:");
+		System.out.println(correctPredictClass1 + "   " + class1_2 + "   " + class1_3);
+		System.out.println(class2_1 + "   " + correctPredictClass2 + "   " + class2_3);
+		System.out.println(class3_1 + "   " + class3_2 + "   " + correctPredictClass3);
+	}
+
+	private int classifyInstance(Instance instance, Tree tree) {
+		// go left
+		Tree current = tree;
+		int label = -1;
+		while (current != null) {
+
+			if (current.label != -1) {
+				label = current.label;
+				break;
+			} else {
+				if (instance.getFeatures()[current.split.feature] < current.split.value) {
+					current = current.leftChild;
+
+				} else {
+					// go right
+					current = current.rightChild;
+				}
+
+			}
+
+		}
+		return label;
 	}
 
 	private void findPossibleSplits(ArrayList<Instance> data, int numberOfSplits) {
@@ -44,13 +133,50 @@ public class DecisionTreeLearner {
 		}
 	}
 
+	public void printTree(Tree tree) {
+		// kodlanacak
+		 if(tree!=null&&tree.split!=null)
+			System.out.printf(" Feature: " + tree.split.feature + "  value: " + tree.split.value + " -----");
+			if (tree.isLeaf)
+				System.out.println("Label: " + tree.label);
+		
+		if (tree.leftChild != null) {
+			printTree(tree.leftChild);
+		}
+		if (tree.rightChild != null) {
+			printTree(tree.rightChild);
+		}
+		System.out.println();
+	}
+
 	private void buildTree(Tree tree) {
 		Split bestSplit = findBestSplit(tree);
-		decomposeTree(bestSplit, tree);
-		if (!tree.leftComplete)
+
+		// there is no meaningful split
+		if (bestSplit.feature == 0 && bestSplit.value == 0) {
+			int label = checkConfidence(tree, 0.98);
+			if (label != -1) {
+				tree.label = label;
+				tree.isLeaf = true;
+				return;
+			} else {
+				label = checkConfidence(tree, 0.3);
+				if (label != -1) {
+					tree.label = label;
+					tree.isLeaf = true;
+					return;
+				}
+			}
+
+			// label ý set et.
+			// isleaf true yap gel.
+		} else {
+			tree.split = bestSplit;
+			decomposeTree(bestSplit, tree);
 			buildTree(tree.leftChild);
-		if (!tree.rightComplete)
+
 			buildTree(tree.rightChild);/**/
+		}
 	}
 
 	private void decomposeTree(Split bestSplit, Tree tree) {
@@ -71,8 +197,45 @@ public class DecisionTreeLearner {
 				}
 			}
 		}
-		// burada kontrolü yap eðer left right istenen seviyedeyse left complete
-		// olduysa mesela class labelý belirle complete de cýk
+
+	}
+
+	private int checkConfidence(Tree tree, double confidence) {
+		double class1 = 0;
+		double class2 = 0;
+		double class3 = 0;
+		int label = -1;
+		for (Instance ins : tree.data) {
+			if (ins.getStateOfNature() == 1)
+				class1++;
+			if (ins.getStateOfNature() == 2)
+				class2++;
+			if (ins.getStateOfNature() == 3)
+				class3++;
+		}
+		double mostFrequent = findMax(class1, class2, class3);
+		double ratio = mostFrequent / tree.data.size();
+		if (mostFrequent == class1)
+			label = 1;
+		if (mostFrequent == class2)
+			label = 2;
+		if (mostFrequent == class3)
+			label = 3;
+		if (ratio >= confidence)
+			return label;
+		else
+			return -1;
+	}
+
+	private double findMax(double... vals) {
+		double max = Double.NEGATIVE_INFINITY;
+
+		for (double d : vals) {
+			if (d > max)
+				max = d;
+		}
+
+		return max;
 	}
 
 	private Split findBestSplit(Tree tree) {
@@ -88,7 +251,7 @@ public class DecisionTreeLearner {
 		double max = 0;
 		Split best = new Split(0, 0);
 		ArrayList<Integer> labels = new ArrayList<Integer>();
-		int countInstances = 0;
+		double countInstances = 0.0;
 		for (Split split : possibleSplits) {
 			for (Instance instance : tree.data) {
 				if (instance.getFeatures()[split.feature] < split.value) {
@@ -97,7 +260,9 @@ public class DecisionTreeLearner {
 				}
 
 			}
-			informationGain = actualInfoGain - (countInstances / tree.data.size() * entrophy(labels));
+			if (countInstances == 0)
+				continue;
+			informationGain = actualInfoGain - ((countInstances / tree.data.size()) * entrophy(labels));
 			if (informationGain > max) {
 				max = informationGain;
 				best = split;
@@ -118,6 +283,7 @@ public class DecisionTreeLearner {
 	}
 
 	private double entrophy(ArrayList<Integer> labels) {
+
 		double class1 = 0, class2 = 0, class3 = 0;
 		for (int i = 0; i < labels.size(); i++) {
 			if (labels.get(i) == 1)
